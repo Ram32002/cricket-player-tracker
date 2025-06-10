@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cricket Player Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 1200px; /* Increased max-width for more columns */
+      margin: auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+      display: flex;
+      flex-wrap: wrap; /* Allows items to wrap to the next line */
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center; /* Vertically align items */
+    }
+
+    /* Adjusted input/select styling for better responsiveness */
+    input[type="text"],
+    input[type="file"],
+    select {
+      flex: 1; /* Allows items to grow and shrink */
+      min-width: 150px; /* Minimum width for inputs/selects */
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box; /* Include padding and border in the element's total width */
+    }
+
+    button {
+      background-color: #3498db;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+      flex-shrink: 0; /* Ensures button doesn't shrink too much */
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .btn.delete { background-color: #e74c3c; }
+    .btn.delete:hover { background-color: #c0392b; }
+    .btn.edit { background-color: #f39c12; }
+    .btn.edit:hover { background-color: #d68910; }
+    .btn.match { background-color: #2ecc71; }
+    .btn.match:hover { background-color: #27ae60; }
+
+    .section-header {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .actions button {
+      margin: 0 4px;
+    }
+
+    /* Responsive Table Wrapper */
+    .table-responsive {
+      overflow-x: auto; /* Allows horizontal scrolling for wide tables */
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1100px; /* Ensures table doesn't get too cramped on larger screens with new columns */
+    }
+    .top-players-table {
+        min-width: unset; /* Override min-width for smaller top player tables */
+    }
+
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+      white-space: nowrap; /* Prevent text wrapping in table cells */
+    }
+
+    th {
+      background-color: #34495e;
+      color: white;
+    }
+
+    /* Media Queries for Mobile */
+    @media (max-width: 768px) { /* Adjusted breakpoint for better mobile view */
+      .form-group {
+        flex-direction: column; /* Stack items vertically on small screens */
+        align-items: stretch; /* Stretch items to full width */
+      }
+
+      button, input[type="text"], input[type="file"], select {
+        width: 100%;
+        min-width: unset; /* Remove min-width on smaller screens */
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .section-header {
+        font-size: 18px;
+      }
+
+      table {
+        font-size: 12px; /* Smaller font for table on mobile */
+      }
+      .top-players-table {
+        font-size: 12px;
+      }
+
+      th, td {
+          padding: 8px; /* Reduce padding on mobile */
+      }
+    }
+
+    /* Highlight styles */
+    .batting-top {
+      background-color: #fc6805 !important; /* Orange */
+      font-weight: bold;
+      color: white; /* Ensure text is visible */
+    }
+
+    .bowling-top {
+      background-color: #8409f7 !important; /* Purple */
+      font-weight: bold;
+      color: white; /* Ensure text is visible */
+    }
+
+    .double-top {
+      background: linear-gradient(90deg, #fc6805 50%, #8409f7 50%); /* Orange and purple gradient */
+      font-weight: bold;
+      color: white; /* Ensure text is visible */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Cricket Player Tracker</h2>
+
+    <div class="card">
+      <div class="form-group">
+        <input type="text" id="name" placeholder="Enter Player Name" required />
+        <select id="role">
+          <option value="">Select Role</option>
+          <option value="Batter">Batter</option>
+          <option value="Bowler">Bowler</option>
+          <option value="All-rounder">All-rounder</option>
+          <option value="Wicketkeeper">Wicketkeeper</option>
+        </select>
+        <input type="text" id="battingStyle" placeholder="Batting Style (e.g., Right-hand Bat)" />
+        <input type="text" id="bowlingStyle" placeholder="Bowling Style (e.g., Left-arm Orthodox)" />
+        <button onclick="addPlayer()">Add Player</button>
+      </div>
+
+      <div class="form-group">
+        <button onclick="exportToJSON()">Export JSON</button>
+        <button onclick="exportToCSV()">Export CSV</button>
+        <input type="file" id="import-file" accept=".json" onchange="importFromJSON(event)" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">Player Stats</div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Role</th>
+              <th>Batting Style</th>
+              <th>Bowling Style</th>
+              <th>Matches</th>
+              <th>Innings</th>
+              <th>Runs</th>
+              <th>Wickets</th>
+              <th>Catches</th>
+              <th>Stumpings</th>
+              <th>Run Outs</th>
+              <th>Bat Avg</th>
+              <th>Economy</th>
+              <th>Strike Rate</th>
+              <th>Bowling Avg</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="player-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card hidden" id="match-section">
+      <div class="section-header">Matches for <span id="match-player-name"></span></div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Runs</th><th>Wickets</th><th>Overs</th><th>Conceded</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="match-list"></tbody>
+        </table>
+      </div>
+      <div style="margin-top: 10px;">
+        <button onclick="addMatch()">+ Add Match</button>
+        <button onclick="closeMatchSection()">Close</button>
+      </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">Top 3 Batters (by Runs)</div>
+        <div class="table-responsive">
+            <table class="top-players-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Runs</th>
+                        <th>Matches</th>
+                        <th>Bat Avg</th>
+                    </tr>
+                </thead>
+                <tbody id="top-batters-list">
+                    <tr><td colspan="5">No data available</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">Top 3 Bowlers (by Wickets)</div>
+        <div class="table-responsive">
+            <table class="top-players-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Wickets</th>
+                        <th>Matches</th>
+                        <th>Bowling Avg</th>
+                    </tr>
+                </thead>
+                <tbody id="top-bowlers-list">
+                    <tr><td colspan="5">No data available</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+  </div>
+
+  <script>
+    let players = JSON.parse(localStorage.getItem('players_match') || '[]');
+    let currentPlayerIndex = -1;
+
+    // Save players data to local storage
+    function save() {
+      localStorage.setItem('players_match', JSON.stringify(players));
+    }
+
+    // Calculates and returns aggregated statistics for a player's matches
+    function calculateStats(matches) {
+      let innings = 0;
+      let runs = 0;
+      let wickets = 0;
+      let overs = 0;
+      let conceded = 0;
+      let totalBallsFaced = 0;
+      let totalCatches = 0;
+      let totalStumpings = 0;
+      let totalRunOuts = 0;
+
+      matches.forEach(m => {
+        if (m.didBat) {
+          innings++;
+          totalBallsFaced += (m.balls || 0);
+        }
+        runs += m.runs;
+        wickets += m.wickets;
+        overs += m.overs;
+        conceded += m.conceded;
+        totalCatches += (m.catches || 0);
+        totalStumpings += (m.stumpings || 0);
+        totalRunOuts += (m.runOuts || 0);
+      });
+
+      const avg = innings ? (runs / innings).toFixed(2) : '-';
+      const sr = totalBallsFaced ? ((runs / totalBallsFaced) * 100).toFixed(2) : '-';
+      const eco = overs ? (conceded / overs).toFixed(2) : '-';
+      const bowlAvg = wickets ? (conceded / wickets).toFixed(2) : '-';
+
+      return {
+        matches: matches.length,
+        innings,
+        runs,
+        wickets,
+        avg,
+        sr,
+        eco,
+        bowlAvg,
+        totalCatches,
+        totalStumpings,
+        totalRunOuts
+      };
+    }
+
+    // Renders the list of players and their aggregated stats in the main table
+    function renderPlayers() {
+      const tbody = document.getElementById('player-list');
+      tbody.innerHTML = ''; // Clear existing rows
+
+      let topBatIndex = -1;
+      let topBowlIndex = -1;
+      let maxRuns = -1;
+      let maxWickets = -1;
+
+      // Determine top batter and bowler for highlighting
+      players.forEach((player, i) => {
+        const stats = calculateStats(player.matches);
+
+        if (stats.runs > maxRuns && stats.innings > 0) {
+          maxRuns = stats.runs;
+          topBatIndex = i;
+        }
+
+        if (stats.wickets > maxWickets && stats.wickets > 0) {
+          maxWickets = stats.wickets;
+          topBowlIndex = i;
+        }
+      });
+
+      // Populate the player table
+      players.forEach((player, index) => {
+        const stats = calculateStats(player.matches);
+
+        let rowClass = '';
+        const isTopBatter = (index === topBatIndex && stats.runs > 0);
+        const isTopBowler = (index === topBowlIndex && stats.wickets > 0);
+
+        if (isTopBatter && isTopBowler) {
+          rowClass = 'double-top';
+        } else if (isTopBatter) {
+          rowClass = 'batting-top';
+        } else if (isTopBowler) {
+          rowClass = 'bowling-top';
+        }
+
+        const row = `
+          <tr class="${rowClass}">
+            <td>${index + 1}</td>
+            <td>${player.name}</td>
+            <td>${player.role || '-'}</td>
+            <td>${player.battingStyle || '-'}</td>
+            <td>${player.bowlingStyle || '-'}</td>
+            <td>${stats.matches}</td>
+            <td>${stats.innings}</td>
+            <td>${stats.runs}</td>
+            <td>${stats.wickets}</td>
+            <td>${stats.totalCatches}</td>
+            <td>${stats.totalStumpings}</td>
+            <td>${stats.totalRunOuts}</td>
+            <td>${stats.avg}</td>
+            <td>${stats.eco}</td>
+            <td>${stats.sr}</td>
+            <td>${stats.bowlAvg}</td>
+            <td class="actions">
+              <button class="btn match" onclick="viewMatches(${index})">Matches</button>
+              <button class="btn delete" onclick="deletePlayer(${index})">Delete</button>
+            </td>
+          </tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
+      });
+
+      renderTopBatters();
+      renderTopBowlers();
+    }
+
+    // Adds a new player to the players array
+    function addPlayer() {
+      const nameInput = document.getElementById('name');
+      const roleInput = document.getElementById('role');
+      const battingStyleInput = document.getElementById('battingStyle');
+      const bowlingStyleInput = document.getElementById('bowlingStyle');
+
+      const name = nameInput.value.trim();
+      const role = roleInput.value;
+      const battingStyle = battingStyleInput.value.trim();
+      const bowlingStyle = bowlingStyleInput.value.trim();
+
+      if (!name) {
+        alert("Player name cannot be empty!");
+        return;
+      }
+      // Optional: uncomment below if you want to enforce role selection
+      // if (!role) {
+      //   alert("Please select a player role!");
+      //   return;
+      // }
+
+      players.push({ name, role, battingStyle, bowlingStyle, matches: [] });
+      save();
+      renderPlayers();
+      // Clear input fields
+      nameInput.value = '';
+      roleInput.value = '';
+      battingStyleInput.value = '';
+      bowlingStyleInput.value = '';
+    }
+
+    // Deletes a player from the array
+    function deletePlayer(index) {
+      if (confirm("Are you sure you want to delete this player?")) {
+        players.splice(index, 1);
+        save();
+        renderPlayers();
+        closeMatchSection(); // Close match section if the deleted player's matches were open
+      }
+    }
+
+    // Displays the match history for a selected player
+    function viewMatches(index) {
+      currentPlayerIndex = index;
+      const player = players[index];
+      document.getElementById('match-player-name').innerText = player.name;
+      document.getElementById('match-section').classList.remove('hidden');
+      renderMatches();
+    }
+
+    // Renders the list of matches for the currently selected player
+    function renderMatches() {
+      const matchList = document.getElementById('match-list');
+      const matches = players[currentPlayerIndex].matches;
+      matchList.innerHTML = '';
+      if (matches.length === 0) {
+          matchList.innerHTML = '<tr><td colspan="6">No matches recorded for this player.</td></tr>';
+          return;
+      }
+      matches.forEach((m, i) => {
+        const row = `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${m.runs}</td>
+            <td>${m.wickets}</td>
+            <td>${m.overs}</td>
+            <td>${m.conceded}</td>
+            <td>
+              <button class="btn edit" onclick="editMatch(${i})">Edit</button>
+              <button class="btn delete" onclick="deleteMatch(${i})">Delete</button>
+            </td>
+          </tr>`;
+        matchList.insertAdjacentHTML('beforeend', row);
+      });
+    }
+
+    // Prompts for new match details and adds it to the current player
+    function addMatch() {
+      const player = players[currentPlayerIndex]; // Get the current player object
+
+      const didBat = confirm("Did the player bat in this match?");
+      const runs = didBat ? parseInt(prompt("Runs scored:", "0")) || 0 : 0;
+      const balls = didBat ? parseInt(prompt("Balls faced:", "0")) || 0 : 0;
+      const wickets = parseInt(prompt("Wickets taken:", "0")) || 0;
+      const overs = parseFloat(prompt("Overs bowled:", "0")) || 0;
+      const conceded = parseInt(prompt("Runs conceded:", "0")) || 0;
+
+      let catches = 0;
+      let stumpings = 0;
+      let runOuts = 0;
+
+      // Conditional prompting for fielding stats based on player role
+      if (player.role === "Wicketkeeper") {
+        catches = parseInt(prompt("Catches taken (Wicketkeeper):", "0")) || 0;
+        stumpings = parseInt(prompt("Stumpings effected (Wicketkeeper):", "0")) || 0;
+        runOuts = parseInt(prompt("Run Outs effected (Wicketkeeper, Direct Hits/Assists):", "0")) || 0;
+      } else {
+        // For other roles, only ask for catches
+        catches = parseInt(prompt("Catches taken (Fielder):", "0")) || 0;
+        // stumpings and runOuts remain 0 for non-wicketkeepers
+      }
+
+      players[currentPlayerIndex].matches.push({ didBat, runs, balls, wickets, overs, conceded, catches, stumpings, runOuts });
+      save();
+      renderMatches();
+      renderPlayers(); // Re-render player stats to update averages/totals
+    }
+
+    // Prompts to edit an existing match's details
+    function editMatch(index) {
+      const player = players[currentPlayerIndex]; // Get the current player object
+      const m = players[currentPlayerIndex].matches[index]; // Get the specific match object
+
+      const didBat = confirm("Did the player bat in this match?");
+      const runs = didBat ? parseInt(prompt("Runs scored:", m.runs)) || 0 : 0;
+      const balls = didBat ? parseInt(prompt("Balls faced:", m.balls || 0)) || 0 : 0;
+      const wickets = parseInt(prompt("Wickets taken:", m.wickets)) || 0;
+      const overs = parseFloat(prompt("Overs bowled:", m.overs)) || 0;
+      const conceded = parseInt(prompt("Runs conceded:", m.conceded)) || 0;
+
+      let catches = m.catches || 0;     // Initialize with existing value
+      let stumpings = m.stumpings || 0; // Initialize with existing value
+      let runOuts = m.runOuts || 0;     // Initialize with existing value
+
+      // Conditional prompting for fielding stats based on player role
+      if (player.role === "Wicketkeeper") {
+        catches = parseInt(prompt("Catches taken (Wicketkeeper):", m.catches || "0")) || 0;
+        stumpings = parseInt(prompt("Stumpings effected (Wicketkeeper):", m.stumpings || "0")) || 0;
+        runOuts = parseInt(prompt("Run Outs effected (Wicketkeeper, Direct Hits/Assists):", m.runOuts || "0")) || 0;
+      } else {
+        // For other roles, only edit catches, ensure stumpings/runOuts are 0
+        catches = parseInt(prompt("Catches taken (Fielder):", m.catches || "0")) || 0;
+        stumpings = 0; // Ensure non-keepers have 0 stumpings
+        runOuts = 0;   // Ensure non-keepers have 0 run-outs
+      }
+
+      players[currentPlayerIndex].matches[index] = { didBat, runs, balls, wickets, overs, conceded, catches, stumpings, runOuts };
+      save();
+      renderMatches();
+      renderPlayers(); // Re-render player stats to update averages/totals
+    }
+
+    // Deletes a specific match from the current player's history
+    function deleteMatch(index) {
+      if (confirm("Delete this match?")) {
+        players[currentPlayerIndex].matches.splice(index, 1);
+        save();
+        renderMatches();
+        renderPlayers(); // Re-render player stats to update averages/totals
+      }
+    }
+
+    // Closes the match history section
+    function closeMatchSection() {
+      currentPlayerIndex = -1;
+      document.getElementById('match-section').classList.add('hidden');
+    }
+
+    // Exports player data to a JSON file
+    function exportToJSON() {
+      const dataStr = JSON.stringify(players, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "cricket_players.json";
+      a.click();
+    }
+
+    // Exports player data to a CSV file
+    function exportToCSV() {
+      const headers = ["Name", "Role", "Batting Style", "Bowling Style", "Matches", "Innings", "Runs", "Wickets", "Catches", "Stumpings", "Run Outs", "Bat Avg", "Economy", "Strike Rate", "Bowling Avg"];
+      const rows = players.map(p => {
+        const stats = calculateStats(p.matches);
+        return [
+          p.name,
+          p.role || '',
+          p.battingStyle || '',
+          p.bowlingStyle || '',
+          stats.matches,
+          stats.innings,
+          stats.runs,
+          stats.wickets,
+          stats.totalCatches,
+          stats.totalStumpings,
+          stats.totalRunOuts,
+          stats.avg,
+          stats.eco,
+          stats.sr,
+          stats.bowlAvg
+        ];
+      });
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "cricket_players.csv";
+      a.click();
+    }
+
+    // Imports player data from a JSON file
+    function importFromJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            players = data; // Overwrite current players data
+            save();
+            renderPlayers();
+            alert("Import successful!");
+          } else {
+            alert("Invalid file format. Please select a valid JSON array.");
+          }
+        } catch (error) {
+          alert("Error parsing JSON file: " + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Renders the top 3 batters table
+    function renderTopBatters() {
+        const tbody = document.getElementById('top-batters-list');
+        tbody.innerHTML = ''; // Clear existing rows
+
+        // Filter players who have batted and sort by runs
+        const topBatters = players
+            .map(player => ({
+                player: player,
+                stats: calculateStats(player.matches)
+            }))
+            .filter(item => item.stats.innings > 0 && item.stats.runs > 0) // Only include players who have batted and scored runs
+            .sort((a, b) => b.stats.runs - a.stats.runs) // Sort in descending order of runs
+            .slice(0, 3); // Get top 3
+
+        if (topBatters.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
+            return;
+        }
+
+        topBatters.forEach((item, index) => {
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.player.name}</td>
+                    <td>${item.stats.runs}</td>
+                    <td>${item.stats.matches}</td>
+                    <td>${item.stats.avg}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // Renders the top 3 bowlers table
+    function renderTopBowlers() {
+        const tbody = document.getElementById('top-bowlers-list');
+        tbody.innerHTML = ''; // Clear existing rows
+
+        // Filter players who have bowled and sort by wickets
+        const topBowlers = players
+            .map(player => ({
+                player: player,
+                stats: calculateStats(player.matches)
+            }))
+            .filter(item => item.stats.wickets > 0) // Only include players who have taken wickets
+            .sort((a, b) => b.stats.wickets - a.stats.wickets) // Sort in descending order of wickets
+            .slice(0, 3); // Get top 3
+
+        if (topBowlers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
+            return;
+        }
+
+        topBowlers.forEach((item, index) => {
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.player.name}</td>
+                    <td>${item.stats.wickets}</td>
+                    <td>${item.stats.matches}</td>
+                    <td>${item.stats.bowlAvg}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // Initial render when the page loads
+    renderPlayers();
+  </script>
+</body>
+</html>
